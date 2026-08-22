@@ -417,7 +417,7 @@ export default function RitmaApp({
               <a className="quiet-link" href={signOutPath}>Keluar</a>
             </div>
           ) : (
-            <button className="dark-button" type="button" onClick={() => setLeadOpen(true)}>Dapatkan pelan 7 hari</button>
+            <button className="dark-button" type="button" onClick={() => setLeadOpen(true)}>Dapatkan ebook diet</button>
           )}
         </div>
       </nav>
@@ -425,8 +425,8 @@ export default function RitmaApp({
       {!authUser && (
         <aside className="demo-banner" aria-label="Makluman mod demo">
           <span>MOD DEMO</span>
-          <p>Cuba Ritma tanpa akaun. Dapatkan pelan 7 hari percuma jika anda mahu sambung.</p>
-          <button type="button" onClick={() => setLeadOpen(true)}>Dapatkan pelan percuma</button>
+          <p>Cuba Ritma tanpa akaun. Dapatkan ebook diet percuma jika anda mahu sambung.</p>
+          <button type="button" onClick={() => setLeadOpen(true)}>Dapatkan ebook percuma</button>
         </aside>
       )}
 
