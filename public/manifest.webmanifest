@@ -1,0 +1,17 @@
+{
+  "name": "Ritma: Kalori, Air & Senaman",
+  "short_name": "Ritma",
+  "description": "Pantau kalori, air dan senaman setiap hari.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f3f0e9",
+  "theme_color": "#18232a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -117,7 +117,10 @@ export default function RitmaApp({
   authUser: AuthUser | null;
   signInPath: string;
   signOutPath: string;
-}) {
+}) {  useEffect(() => {
+    if ("serviceWorker" in navigator) void navigator.serviceWorker.register("/sw.js");
+  }, []);
+
   const today = useMemo(malaysiaDate, []);
   const [profile, setProfile] = useState<Profile | null | undefined>(
     authUser ? undefined : DEFAULT_PROFILE,
