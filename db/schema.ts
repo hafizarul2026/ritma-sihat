@@ -45,5 +45,21 @@ export const dailyEntries = sqliteTable(
   ],
 );
 
+export const leads = sqliteTable("leads", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().default(""),
+  contact: text("contact").notNull().unique(),
+  contactType: text("contact_type", { enum: ["email", "whatsapp"] }).notNull(),
+  goal: text("goal").notNull().default(""),
+  contactConsent: integer("contact_consent", { mode: "boolean" }).notNull().default(false),
+  marketingWhatsapp: integer("marketing_whatsapp", { mode: "boolean" }).notNull().default(false),
+  marketingEmail: integer("marketing_email", { mode: "boolean" }).notNull().default(false),
+  consentAt: text("consent_at").notNull(),
+  noticeVersion: text("notice_version").notNull().default("2026-08-22"),
+  source: text("source").notNull().default("ritma-public"),
+  createdAt: text("created_at").notNull().default(currentTimestamp),
+  updatedAt: text("updated_at").notNull().default(currentTimestamp),
+});
+
 export type Profile = typeof profiles.$inferSelect;
 export type DailyEntry = typeof dailyEntries.$inferSelect;

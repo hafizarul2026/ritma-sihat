@@ -38,6 +38,24 @@ const entriesTableSql = [
   ")",
 ].join(" ");
 
+const leadsTableSql = [
+  "CREATE TABLE IF NOT EXISTS leads (",
+  "id INTEGER PRIMARY KEY AUTOINCREMENT,",
+  "name TEXT NOT NULL DEFAULT '',",
+  "contact TEXT NOT NULL UNIQUE,",
+  "contact_type TEXT NOT NULL,",
+  "goal TEXT NOT NULL DEFAULT '',",
+  "contact_consent INTEGER NOT NULL DEFAULT 0,",
+  "marketing_whatsapp INTEGER NOT NULL DEFAULT 0,",
+  "marketing_email INTEGER NOT NULL DEFAULT 0,",
+  "consent_at TEXT NOT NULL,",
+  "notice_version TEXT NOT NULL DEFAULT '2026-08-22',",
+  "source TEXT NOT NULL DEFAULT 'ritma-public',",
+  "created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,",
+  "updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP",
+  ")",
+].join(" ");
+
 async function initializeSchema() {
   const d1 = env.DB;
   if (!d1) throw new Error("D1 binding DB tidak tersedia.");
@@ -45,6 +63,7 @@ async function initializeSchema() {
   await d1.batch([
     d1.prepare(profileTableSql),
     d1.prepare(entriesTableSql),
+    d1.prepare(leadsTableSql),
     d1.prepare(
       "CREATE INDEX IF NOT EXISTS idx_daily_entries_user_date ON daily_entries(user_id, entry_date)",
     ),

@@ -1,6 +1,7 @@
 "use client";
 
 import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { LeadDialog } from "./components/LeadDialog";
 import { LogSheet, ProfileDialog } from "./components/RitmaDialogs";
 import {
   type AuthUser,
@@ -130,6 +131,7 @@ export default function RitmaApp({
   const [savingEntry, setSavingEntry] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [toast, setToast] = useState("");
+  const [leadOpen, setLeadOpen] = useState(false);
 
   useEffect(() => {
     if (!authUser) return;
@@ -272,7 +274,7 @@ export default function RitmaApp({
     try {
       if (!authUser) {
         setProfile({ ...DEFAULT_PROFILE, ...input });
-        setToast("Tetapan demo dah dikemas kini. Log masuk untuk simpan.");
+        setToast("Tetapan demo dikemas kini untuk sesi ini.");
         setProfileOpen(false);
         return;
       }
@@ -330,7 +332,7 @@ export default function RitmaApp({
     try {
       if (!authUser) {
         setEntries((current) => [...current, draft]);
-        setToast("Ditambah dalam mod demo. Log masuk untuk simpan di peranti lain.");
+        setToast("Rekod contoh ditambah untuk sesi ini.");
       } else {
         const response = await fetch("/api/entries", {
           method: "POST",
@@ -415,7 +417,7 @@ export default function RitmaApp({
               <a className="quiet-link" href={signOutPath}>Keluar</a>
             </div>
           ) : (
-            <a className="dark-button" href={signInPath}>Log masuk</a>
+            <button className="dark-button" type="button" onClick={() => setLeadOpen(true)}>Dapatkan pelan 7 hari</button>
           )}
         </div>
       </nav>
@@ -423,8 +425,8 @@ export default function RitmaApp({
       {!authUser && (
         <aside className="demo-banner" aria-label="Makluman mod demo">
           <span>MOD DEMO</span>
-          <p>Cuba semua fungsi. Log masuk untuk simpan rekod serta profil WhatsApp/e-mel anda.</p>
-          <a href={signInPath}>Log masuk & simpan</a>
+          <p>Cuba Ritma tanpa akaun. Dapatkan pelan 7 hari percuma jika anda mahu sambung.</p>
+          <button type="button" onClick={() => setLeadOpen(true)}>Dapatkan pelan percuma</button>
         </aside>
       )}
 
@@ -527,6 +529,7 @@ export default function RitmaApp({
           onSave={saveProfile}
         />
       )}
+      {leadOpen && <LeadDialog onClose={() => setLeadOpen(false)} />}
       <div className="toast" role="status" aria-live="polite">
         {toast && <button type="button" onClick={() => setToast("")}>{toast}<span aria-hidden="true">×</span></button>}
       </div>
