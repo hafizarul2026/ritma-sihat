@@ -1,3 +1,4 @@
+import { env } from "cloudflare:workers";
 import { eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { ensureSchema } from "../../../db/ensure";
@@ -15,6 +16,27 @@ export async function POST(request: Request) {
     await ensureSchema(); const now = new Date().toISOString();
     const values = { name: cleanText(payload.name, 60), contact, contactType, goal: cleanText(payload.goal, 40), contactConsent: true, marketingWhatsapp: payload.marketingWhatsapp === true, marketingEmail: payload.marketingEmail === true, consentAt: now, noticeVersion: NOTICE_VERSION, source: "ritma-public", updatedAt: now } as const;
     const db = getDb(); await db.insert(leads).values(values).onConflictDoUpdate({ target: leads.contact, set: values });
+
+    const webhookUrl = env.RITMA_LEADS_WEBHOOK_URL;
+    const webhookSecret = env.RITMA_LEADS_WEBHOOK_SECRET;
+    if (webhookUrl && webhookSecret) {
+      const sync = await fetch(webhookUrl + "?key=" + encodeURIComponent(webhookSecret), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: values.name,
+          email,
+          whatsapp,
+          goal: values.goal,
+          contactConsent: true,
+          marketingWhatsapp: values.marketingWhatsapp,
+          marketingEmail: values.marketingEmail,
+          consentAt: now,
+        }),
+      });
+      if (!sync.ok) throw new Error("Google Sheets sync failed");
+    }
+
     const [lead] = await db.select().from(leads).where(eq(leads.contact, contact)).limit(1);
     return Response.json({ lead }, { status: 201 });
   } catch (error) { return routeError(error); }
