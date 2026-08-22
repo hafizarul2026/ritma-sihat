@@ -1,7 +1,1 @@
-import RitmaApp from "./RitmaApp";
-
-export const dynamic = "force-dynamic";
-
-export default function Home() {
-  return <RitmaApp authUser={null} signInPath="#pelan-ritma" signOutPath="/" />;
-}
+import RitmaFirebaseApp from "./RitmaFirebaseApp";\n\nexport const dynamic = "force-dynamic";\n\nexport default function Home() {\n  return <RitmaFirebaseApp />;\n}\n
