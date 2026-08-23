@@ -113,6 +113,7 @@ export default function RitmaFirebaseApp() {
   const [category, setCategory] = useState<Category>("meal");
   const [toast, setToast] = useState("");
   const [leadOpen, setLeadOpen] = useState(false);
+  const [quickPreset, setQuickPreset] = useState<{ label: string; amount: number } | null>(null);
 
   useEffect(() => onAuthStateChanged(firebaseAuth, (current) => {
     setUser(current);
@@ -200,10 +201,8 @@ export default function RitmaFirebaseApp() {
     event.preventDefault();
     if (!user) return;
     const data = new FormData(event.currentTarget);
-    const preset = String(data.get("preset") || "");
-    const [presetLabel, presetAmount] = preset.split("|");
-    const label = presetLabel || String(data.get("label") || "").trim();
-    const amount = Number(presetAmount || data.get("amount") || 0);
+    const label = quickPreset?.label || String(data.get("label") || "").trim();
+    const amount = quickPreset?.amount || Number(data.get("amount") || 0);
     if (!label || amount <= 0) {
       setToast("Pilih senarai cepat atau masukkan butiran rekod.");
       return;
@@ -220,6 +219,19 @@ export default function RitmaFirebaseApp() {
     setToast("Rekod disimpan.");
   }
 
+  async function addQuickWater(glasses: number) {
+    if (!user) return;
+    await addDoc(collection(firebaseDb, "users", user.uid, "entries"), {
+      category: "water",
+      label: "Air kosong — " + glasses + " gelas",
+      amount: glasses * GLASS_ML,
+      entryDate: today,
+      entryTime: timeMY(),
+      createdAt: serverTimestamp(),
+    });
+    setToast(glasses + " gelas air ditambah.");
+  }
+
   if (loading) return <main className="app-shell"><p className="date-label">Memuatkan Ritma…</p></main>;
 
   return (
@@ -232,7 +244,7 @@ export default function RitmaFirebaseApp() {
       {user && <section className="dashboard" id="top">
         <header className="hero-copy"><div><p className="eyebrow">RITMA HARI INI · {profile.dayMode.toUpperCase()}</p><h1>Kalori kena pantau.</h1></div><div className="hero-side"><p>Rekod anda disimpan secara peribadi pada akaun e-mel ini.</p><div className="mode-switcher">{(["biasa", "puasa", "kerja_luar"] as Mode[]).map((mode) => <button key={mode} className={profile.dayMode === mode ? "active" : ""} onClick={() => void setDoc(doc(firebaseDb, "users", user.uid), { dayMode: mode }, { merge: true })}>{mode === "kerja_luar" ? "Kerja luar" : mode[0].toUpperCase() + mode.slice(1)}</button>)}</div></div></header>
 
-        <section className="pulse-card"><div className="pulse-heading"><div><p className="kicker">3 SASARAN HARI INI</p><h2>{score >= 90 ? "Ritma anda sangat baik hari ini." : "Teruskan sedikit demi sedikit."}</h2></div><div className="score"><strong>{score}</strong><span>/100</span></div></div><div className="metric-grid">{metrics.map((metric) => <article className="metric" key={metric.category}><div className={"ring " + metric.tone} style={{ "--progress": progress(total(todayEntries, metric.category), metric.valueTarget) + "%" } as CSSProperties}><span>{progress(total(todayEntries, metric.category), metric.valueTarget)}%</span></div><div className="metric-copy"><p>{metric.label}</p><strong>{metric.value}</strong><small> / {metric.target}</small></div><button className="metric-add" onClick={() => { setCategory(metric.category); setEntryOpen(true); }}>+</button></article>)}</div><div className="next-action"><span className="arrow">→</span><div><p>CADANGAN SETERUSNYA</p><strong>{water < profile.waterTargetMl ? "Tambah satu gelas air." : "Teruskan rutin anda hari ini."}</strong><small>Catat sedikit demi sedikit untuk lihat ritma sebenar.</small></div><button className="primary-button" onClick={() => setEntryOpen(true)}>Catat sekarang</button></div></section>
+        <section className="pulse-card"><div className="pulse-heading"><div><p className="kicker">3 SASARAN HARI INI</p><h2>{score >= 90 ? "Ritma anda sangat baik hari ini." : "Teruskan sedikit demi sedikit."}</h2></div><div className="score"><strong>{score}</strong><span>/100</span></div></div><div className="metric-grid">{metrics.map((metric) => <article className="metric" key={metric.category}><div className={"ring " + metric.tone} style={{ "--progress": progress(total(todayEntries, metric.category), metric.valueTarget) + "%" } as CSSProperties}><span>{progress(total(todayEntries, metric.category), metric.valueTarget)}%</span></div><div className="metric-copy"><p>{metric.label}</p><strong>{metric.value}</strong><small> / {metric.target}</small>{metric.category === "water" && <div className="water-quick"><span>Tambah terus</span><div><button type="button" onClick={() => void addQuickWater(1)}>+1 gelas</button><button type="button" onClick={() => void addQuickWater(2)}>+2 gelas</button><button type="button" onClick={() => void addQuickWater(3)}>+3 gelas</button></div></div>}</div><button className="metric-add" onClick={() => { setQuickPreset(null); setCategory(metric.category); setEntryOpen(true); }}>+</button></article>)}</div><div className="next-action"><span className="arrow">→</span><div><p>CADANGAN SETERUSNYA</p><strong>{water < profile.waterTargetMl ? "Tambah satu gelas air." : "Teruskan rutin anda hari ini."}</strong><small>Catat sedikit demi sedikit untuk lihat ritma sebenar.</small></div><button className="primary-button" onClick={() => setEntryOpen(true)}>Catat sekarang</button></div></section>
 
         <div className="lower-grid"><section className="rhythm-card"><div className="section-heading"><div><p className="kicker">REKOD HARI INI</p><h2>Makanan, air dan senaman anda.</h2></div><button className="text-button" onClick={() => setEntryOpen(true)}>+ Tambah</button></div>{todayEntries.length ? <ol className="entry-list">{[...todayEntries].sort((a,b) => a.entryTime.localeCompare(b.entryTime)).map((entry) => <li key={entry.id}><span className={"entry-dot " + entry.category}/><time>{entry.entryTime}</time><div><strong>{entry.label}</strong><small>{entry.amount} {entry.category === "meal" ? "kcal" : entry.category === "water" ? "ml" : "min"}</small></div><button onClick={() => void deleteDoc(doc(firebaseDb, "users", user.uid, "entries", entry.id))}>Padam</button></li>)}</ol> : <div className="empty-state"><strong>Belum ada rekod.</strong><p>Mula dengan satu catatan kecil untuk hari ini.</p></div>}</section><section className="week-card" id="profil"><p className="kicker">PROFIL & SASARAN</p><h2>Tetapan peribadi anda.</h2><form className="profile-form" onSubmit={saveProfile}><label>Nama paparan<input name="displayName" defaultValue={profile.displayName}/></label><label>Sasaran kalori<input name="calorieTarget" type="number" min="1" defaultValue={profile.calorieTarget}/></label><label>Sasaran air (gelas sehari)<input name="waterGlasses" type="number" min="1" defaultValue={Math.round(profile.waterTargetMl / GLASS_ML)}/></label><label>Sasaran senaman (min)<input name="exerciseTargetMin" type="number" min="1" defaultValue={profile.exerciseTargetMin}/></label><input type="hidden" name="dayMode" value={profile.dayMode}/><button className="profile-submit">Simpan tetapan</button></form></section></div>
       </section>}
@@ -241,11 +253,13 @@ export default function RitmaFirebaseApp() {
 
       {leadOpen && <LeadDialog onClose={() => setLeadOpen(false)} />}
 
-      {entryOpen && user && <div className="dialog-backdrop"><section className="profile-dialog"><button className="close-button" onClick={() => setEntryOpen(false)}>×</button><p className="kicker">CATAT HARI INI</p><h2>Tambah rekod</h2><div className="log-tabs">{(["meal", "water", "exercise"] as Category[]).map((item) => <button key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item === "meal" ? "Makanan" : item === "water" ? "Air" : "Senaman"}</button>)}</div><form className="profile-form" onSubmit={addEntry}>
-        {category === "meal" || category === "water" ? <label>{category === "meal" ? "Pilih makanan / minuman" : "Pilih jumlah air kosong"}<select name="preset" defaultValue=""><option value="">Pilih daripada senarai cepat</option>{(category === "meal" ? foodPresets : waterPresets).map(([label, amount]) => <option key={label} value={label + "|" + amount}>{label} · {amount}{category === "meal" ? " kcal" : " ml"}</option>)}</select></label> : null}
-        <label>{category === "meal" ? "Makanan atau minuman lain" : category === "water" ? "Jumlah lain" : "Aktiviti"}<input name="label" required={category === "exercise"} placeholder={category === "meal" ? "Contoh: Nasi campur" : category === "water" ? "Contoh: Botol air sendiri" : "Contoh: Berjalan"}/></label>
+      {entryOpen && user && <div className="dialog-backdrop"><section className="profile-dialog"><button className="close-button" onClick={() => setEntryOpen(false)}>×</button><p className="kicker">CATAT HARI INI</p><h2>Tambah rekod</h2><div className="log-tabs">{(["meal", "water", "exercise"] as Category[]).map((item) => <button key={item} className={category === item ? "active" : ""} onClick={() => { setQuickPreset(null); setCategory(item); }}>{item === "meal" ? "Makanan" : item === "water" ? "Air" : "Senaman"}</button>)}</div><form className="profile-form" onSubmit={addEntry}>
+        {category === "meal" && <><p className="field-label">PILIH MAKANAN / MINUMAN HALAL BIASA</p><div className="quick-grid">{foodPresets.map(([label, amount]) => <button type="button" key={label} aria-pressed={quickPreset?.label === label} onClick={() => setQuickPreset({ label, amount })}><strong>{label}</strong><span>{amount} kcal · anggaran</span></button>)}</div></>}
+        {category === "water" && <><p className="field-label">PILIH JUMLAH AIR KOSONG</p><div className="amount-grid">{waterPresets.map(([label, amount], index) => <button type="button" key={label} aria-pressed={quickPreset?.label === label} onClick={() => setQuickPreset({ label, amount })}><strong>{index + 1} gelas</strong><span>{amount} ml</span></button>)}</div></>}
+        {quickPreset && category !== "exercise" && <p className="helper"><strong>Dipilih:</strong> {quickPreset.label} · {quickPreset.amount}{category === "meal" ? " kcal" : " ml"}</p>}
+        <label>{category === "meal" ? "Makanan lain (jika tiada dalam senarai)" : category === "water" ? "Jumlah lain (jika tiada di atas)" : "Aktiviti"}<input name="label" required={category === "exercise"} placeholder={category === "meal" ? "Contoh: Nasi campur" : category === "water" ? "Contoh: Botol air sendiri" : "Contoh: Berjalan"}/></label>
         <label>{category === "meal" ? "Kalori lain (kcal)" : category === "water" ? "Jumlah lain (ml)" : "Tempoh (minit)"}<input name="amount" type="number" min="1" required={category === "exercise"}/></label>
-        <p className="helper">{category === "meal" ? "Pilih senarai cepat untuk anggaran kalori, atau masukkan sendiri." : category === "water" ? "1 gelas bersamaan 250 ml." : "Masukkan tempoh aktiviti anda."}</p>
+        <p className="helper">{category === "meal" ? "Pilih satu kad di atas untuk simpan tanpa mengisi angka." : category === "water" ? "1 gelas bersamaan 250 ml." : "Masukkan tempoh aktiviti anda."}</p>
         <button className="profile-submit">Simpan rekod</button>
       </form></section></div>}
       {toast && <div className="toast"><button onClick={() => setToast("")}>{toast}<span>×</span></button></div>}
