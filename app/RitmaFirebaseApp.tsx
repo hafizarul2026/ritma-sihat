@@ -42,9 +42,34 @@ const defaults: Profile = {
   displayName: "",
   dayMode: "biasa",
   calorieTarget: 1800,
-  waterTargetMl: 2200,
+  waterTargetMl: 2000,
   exerciseTargetMin: 30,
 };
+
+const GLASS_ML = 250;
+const foodPresets = [
+  ["Nasi lemak (1 bungkus kecil)", 338],
+  ["Nasi goreng (1 pinggan)", 386],
+  ["Nasi putih (1 mangkuk)", 207],
+  ["Nasi ayam (1 pinggan)", 600],
+  ["Mee kari (1 mangkuk)", 549],
+  ["Mee / bihun goreng (1 pinggan)", 346],
+  ["Roti canai (1 keping)", 301],
+  ["Capati (1 keping)", 300],
+  ["Bubur ayam (1 mangkuk)", 300],
+  ["Ayam goreng (1 ketul)", 260],
+  ["Telur goreng (1 biji)", 90],
+  ["Sayur campur (1 hidangan)", 120],
+  ["Teh tarik (1 gelas)", 180],
+  ["Milo ais (1 gelas)", 230],
+  ["Sirap bandung (1 gelas)", 220],
+  ["Kopi O kosong (1 cawan)", 5],
+] as const;
+const waterPresets = [
+  ["Air kosong — 1 gelas", 250],
+  ["Air kosong — 2 gelas", 500],
+  ["Air kosong — 3 gelas", 750],
+] as const;
 
 function todayMY() {
   const parts = new Intl.DateTimeFormat("en-CA", {
@@ -129,7 +154,7 @@ export default function RitmaFirebaseApp() {
   const exercise = total(todayEntries, "exercise");
   const metrics = [
     { category: "meal" as const, label: "Kalori", value: calories.toLocaleString("ms-MY"), target: profile.calorieTarget + " kcal", valueTarget: profile.calorieTarget, tone: "coral" },
-    { category: "water" as const, label: "Air", value: (water / 1000).toFixed(1) + " L", target: (profile.waterTargetMl / 1000).toFixed(1) + " L", valueTarget: profile.waterTargetMl, tone: "aqua" },
+    { category: "water" as const, label: "Air kosong", value: Math.round(water / GLASS_ML) + " gelas", target: Math.round(profile.waterTargetMl / GLASS_ML) + " gelas", valueTarget: profile.waterTargetMl, tone: "aqua" },
     { category: "exercise" as const, label: "Senaman", value: exercise + " min", target: profile.exerciseTargetMin + " min", valueTarget: profile.exerciseTargetMin, tone: "lime" },
   ];
   const score = Math.round(metrics.reduce((sum, metric) => sum + progress(total(todayEntries, metric.category), metric.valueTarget), 0) / 3);
@@ -164,7 +189,7 @@ export default function RitmaFirebaseApp() {
       displayName: String(data.get("displayName") || "").trim(),
       dayMode: String(data.get("dayMode") || "biasa") as Mode,
       calorieTarget: Number(data.get("calorieTarget") || 1800),
-      waterTargetMl: Number(data.get("waterTargetMl") || 2200),
+      waterTargetMl: Number(data.get("waterGlasses") || 8) * GLASS_ML,
       exerciseTargetMin: Number(data.get("exerciseTargetMin") || 30),
     };
     await setDoc(doc(firebaseDb, "users", user.uid), { ...next, email: user.email || "", updatedAt: serverTimestamp() }, { merge: true });
@@ -175,9 +200,14 @@ export default function RitmaFirebaseApp() {
     event.preventDefault();
     if (!user) return;
     const data = new FormData(event.currentTarget);
-    const label = String(data.get("label") || "").trim();
-    const amount = Number(data.get("amount") || 0);
-    if (!label || amount <= 0) return;
+    const preset = String(data.get("preset") || "");
+    const [presetLabel, presetAmount] = preset.split("|");
+    const label = presetLabel || String(data.get("label") || "").trim();
+    const amount = Number(presetAmount || data.get("amount") || 0);
+    if (!label || amount <= 0) {
+      setToast("Pilih senarai cepat atau masukkan butiran rekod.");
+      return;
+    }
     await addDoc(collection(firebaseDb, "users", user.uid, "entries"), {
       category,
       label,
@@ -204,14 +234,20 @@ export default function RitmaFirebaseApp() {
 
         <section className="pulse-card"><div className="pulse-heading"><div><p className="kicker">3 SASARAN HARI INI</p><h2>{score >= 90 ? "Ritma anda sangat baik hari ini." : "Teruskan sedikit demi sedikit."}</h2></div><div className="score"><strong>{score}</strong><span>/100</span></div></div><div className="metric-grid">{metrics.map((metric) => <article className="metric" key={metric.category}><div className={"ring " + metric.tone} style={{ "--progress": progress(total(todayEntries, metric.category), metric.valueTarget) + "%" } as CSSProperties}><span>{progress(total(todayEntries, metric.category), metric.valueTarget)}%</span></div><div className="metric-copy"><p>{metric.label}</p><strong>{metric.value}</strong><small> / {metric.target}</small></div><button className="metric-add" onClick={() => { setCategory(metric.category); setEntryOpen(true); }}>+</button></article>)}</div><div className="next-action"><span className="arrow">→</span><div><p>CADANGAN SETERUSNYA</p><strong>{water < profile.waterTargetMl ? "Tambah satu gelas air." : "Teruskan rutin anda hari ini."}</strong><small>Catat sedikit demi sedikit untuk lihat ritma sebenar.</small></div><button className="primary-button" onClick={() => setEntryOpen(true)}>Catat sekarang</button></div></section>
 
-        <div className="lower-grid"><section className="rhythm-card"><div className="section-heading"><div><p className="kicker">REKOD HARI INI</p><h2>Makanan, air dan senaman anda.</h2></div><button className="text-button" onClick={() => setEntryOpen(true)}>+ Tambah</button></div>{todayEntries.length ? <ol className="entry-list">{[...todayEntries].sort((a,b) => a.entryTime.localeCompare(b.entryTime)).map((entry) => <li key={entry.id}><span className={"entry-dot " + entry.category}/><time>{entry.entryTime}</time><div><strong>{entry.label}</strong><small>{entry.amount} {entry.category === "meal" ? "kcal" : entry.category === "water" ? "ml" : "min"}</small></div><button onClick={() => void deleteDoc(doc(firebaseDb, "users", user.uid, "entries", entry.id))}>Padam</button></li>)}</ol> : <div className="empty-state"><strong>Belum ada rekod.</strong><p>Mula dengan satu catatan kecil untuk hari ini.</p></div>}</section><section className="week-card" id="profil"><p className="kicker">PROFIL & SASARAN</p><h2>Tetapan peribadi anda.</h2><form className="profile-form" onSubmit={saveProfile}><label>Nama paparan<input name="displayName" defaultValue={profile.displayName}/></label><label>Sasaran kalori<input name="calorieTarget" type="number" min="1" defaultValue={profile.calorieTarget}/></label><label>Sasaran air (ml)<input name="waterTargetMl" type="number" min="1" defaultValue={profile.waterTargetMl}/></label><label>Sasaran senaman (min)<input name="exerciseTargetMin" type="number" min="1" defaultValue={profile.exerciseTargetMin}/></label><input type="hidden" name="dayMode" value={profile.dayMode}/><button className="profile-submit">Simpan tetapan</button></form></section></div>
+        <div className="lower-grid"><section className="rhythm-card"><div className="section-heading"><div><p className="kicker">REKOD HARI INI</p><h2>Makanan, air dan senaman anda.</h2></div><button className="text-button" onClick={() => setEntryOpen(true)}>+ Tambah</button></div>{todayEntries.length ? <ol className="entry-list">{[...todayEntries].sort((a,b) => a.entryTime.localeCompare(b.entryTime)).map((entry) => <li key={entry.id}><span className={"entry-dot " + entry.category}/><time>{entry.entryTime}</time><div><strong>{entry.label}</strong><small>{entry.amount} {entry.category === "meal" ? "kcal" : entry.category === "water" ? "ml" : "min"}</small></div><button onClick={() => void deleteDoc(doc(firebaseDb, "users", user.uid, "entries", entry.id))}>Padam</button></li>)}</ol> : <div className="empty-state"><strong>Belum ada rekod.</strong><p>Mula dengan satu catatan kecil untuk hari ini.</p></div>}</section><section className="week-card" id="profil"><p className="kicker">PROFIL & SASARAN</p><h2>Tetapan peribadi anda.</h2><form className="profile-form" onSubmit={saveProfile}><label>Nama paparan<input name="displayName" defaultValue={profile.displayName}/></label><label>Sasaran kalori<input name="calorieTarget" type="number" min="1" defaultValue={profile.calorieTarget}/></label><label>Sasaran air (gelas sehari)<input name="waterGlasses" type="number" min="1" defaultValue={Math.round(profile.waterTargetMl / GLASS_ML)}/></label><label>Sasaran senaman (min)<input name="exerciseTargetMin" type="number" min="1" defaultValue={profile.exerciseTargetMin}/></label><input type="hidden" name="dayMode" value={profile.dayMode}/><button className="profile-submit">Simpan tetapan</button></form></section></div>
       </section>}
 
       {authOpen && !user && <div className="dialog-backdrop"><section className="profile-dialog"><button className="close-button" onClick={() => setAuthOpen(false)}>×</button><p className="kicker">RITMA SEBENAR</p><h2>{authMode === "signup" ? "Simpan rekod anda dengan akaun e-mel." : "Selamat kembali."}</h2><p className="dialog-intro">Rekod kalori, air dan senaman hanya boleh diakses oleh akaun anda.</p><form className="profile-form" onSubmit={submitAuth}><label>E-mel<input name="email" type="email" autoComplete="email" required/></label><label>Kata laluan<input name="password" type="password" autoComplete={authMode === "signup" ? "new-password" : "current-password"} minLength={6} required/></label>{authError && <p className="helper">{authError}</p>}<button className="profile-submit" disabled={saving}>{saving ? "Sedang diproses…" : authMode === "signup" ? "Daftar & mula" : "Log masuk"}</button></form><button className="text-button" onClick={() => setAuthMode(authMode === "signup" ? "signin" : "signup")}>{authMode === "signup" ? "Sudah ada akaun? Log masuk" : "Belum ada akaun? Daftar"}</button></section></div>}
 
       {leadOpen && <LeadDialog onClose={() => setLeadOpen(false)} />}
 
-      {entryOpen && user && <div className="dialog-backdrop"><section className="profile-dialog"><button className="close-button" onClick={() => setEntryOpen(false)}>×</button><p className="kicker">CATAT HARI INI</p><h2>Tambah rekod</h2><div className="log-tabs">{(["meal", "water", "exercise"] as Category[]).map((item) => <button key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item === "meal" ? "Makanan" : item === "water" ? "Air" : "Senaman"}</button>)}</div><form className="profile-form" onSubmit={addEntry}><label>{category === "meal" ? "Makanan" : category === "water" ? "Jenis minuman" : "Aktiviti"}<input name="label" required placeholder={category === "meal" ? "Contoh: Nasi campur" : category === "water" ? "Contoh: Air kosong" : "Contoh: Berjalan"}/></label><label>{category === "meal" ? "Kalori (kcal)" : category === "water" ? "Jumlah (ml)" : "Tempoh (minit)"}<input name="amount" type="number" min="1" required/></label><button className="profile-submit">Simpan rekod</button></form></section></div>}
+      {entryOpen && user && <div className="dialog-backdrop"><section className="profile-dialog"><button className="close-button" onClick={() => setEntryOpen(false)}>×</button><p className="kicker">CATAT HARI INI</p><h2>Tambah rekod</h2><div className="log-tabs">{(["meal", "water", "exercise"] as Category[]).map((item) => <button key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item === "meal" ? "Makanan" : item === "water" ? "Air" : "Senaman"}</button>)}</div><form className="profile-form" onSubmit={addEntry}>
+        {category === "meal" || category === "water" ? <label>{category === "meal" ? "Pilih makanan / minuman" : "Pilih jumlah air kosong"}<select name="preset" defaultValue=""><option value="">Pilih daripada senarai cepat</option>{(category === "meal" ? foodPresets : waterPresets).map(([label, amount]) => <option key={label} value={label + "|" + amount}>{label} · {amount}{category === "meal" ? " kcal" : " ml"}</option>)}</select></label> : null}
+        <label>{category === "meal" ? "Makanan atau minuman lain" : category === "water" ? "Jumlah lain" : "Aktiviti"}<input name="label" required={category === "exercise"} placeholder={category === "meal" ? "Contoh: Nasi campur" : category === "water" ? "Contoh: Botol air sendiri" : "Contoh: Berjalan"}/></label>
+        <label>{category === "meal" ? "Kalori lain (kcal)" : category === "water" ? "Jumlah lain (ml)" : "Tempoh (minit)"}<input name="amount" type="number" min="1" required={category === "exercise"}/></label>
+        <p className="helper">{category === "meal" ? "Pilih senarai cepat untuk anggaran kalori, atau masukkan sendiri." : category === "water" ? "1 gelas bersamaan 250 ml." : "Masukkan tempoh aktiviti anda."}</p>
+        <button className="profile-submit">Simpan rekod</button>
+      </form></section></div>}
       {toast && <div className="toast"><button onClick={() => setToast("")}>{toast}<span>×</span></button></div>}
     </main>
   );
