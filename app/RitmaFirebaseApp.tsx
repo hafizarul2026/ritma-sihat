@@ -18,6 +18,7 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { firebaseAuth, firebaseDb } from "./firebase";
+import { LeadDialog } from "./components/LeadDialog";
 
 type Mode = "biasa" | "puasa" | "kerja_luar";
 type Category = "meal" | "water" | "exercise";
@@ -27,7 +28,6 @@ type Profile = {
   calorieTarget: number;
   waterTargetMl: number;
   exerciseTargetMin: number;
-  marketingEmail: boolean;
 };
 type Entry = {
   id: string;
@@ -44,7 +44,6 @@ const defaults: Profile = {
   calorieTarget: 1800,
   waterTargetMl: 2200,
   exerciseTargetMin: 30,
-  marketingEmail: false,
 };
 
 function todayMY() {
@@ -88,6 +87,7 @@ export default function RitmaFirebaseApp() {
   const [entryOpen, setEntryOpen] = useState(false);
   const [category, setCategory] = useState<Category>("meal");
   const [toast, setToast] = useState("");
+  const [leadOpen, setLeadOpen] = useState(false);
 
   useEffect(() => onAuthStateChanged(firebaseAuth, (current) => {
     setUser(current);
@@ -144,9 +144,7 @@ export default function RitmaFirebaseApp() {
     try {
       if (authMode === "signup") {
         const credential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
-        const marketingEmail = data.get("marketingEmail") === "on";
-        await setDoc(doc(firebaseDb, "users", credential.user.uid), { email, marketingEmail, consentAt: marketingEmail ? serverTimestamp() : null }, { merge: true });
-        if (marketingEmail) await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email, contactConsent: true, marketingEmail: true }) });
+        await setDoc(doc(firebaseDb, "users", credential.user.uid), { email }, { merge: true });
       } else {
         await signInWithEmailAndPassword(firebaseAuth, email, password);
       }
@@ -168,10 +166,8 @@ export default function RitmaFirebaseApp() {
       calorieTarget: Number(data.get("calorieTarget") || 1800),
       waterTargetMl: Number(data.get("waterTargetMl") || 2200),
       exerciseTargetMin: Number(data.get("exerciseTargetMin") || 30),
-      marketingEmail: data.get("marketingEmail") === "on",
     };
-    await setDoc(doc(firebaseDb, "users", user.uid), { ...next, email: user.email || "", updatedAt: serverTimestamp(), consentAt: next.marketingEmail ? serverTimestamp() : null }, { merge: true });
-    if (next.marketingEmail || profile.marketingEmail) await fetch("/api/leads", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: next.displayName, email: user.email || "", contactConsent: true, marketingEmail: next.marketingEmail }) });
+    await setDoc(doc(firebaseDb, "users", user.uid), { ...next, email: user.email || "", updatedAt: serverTimestamp() }, { merge: true });
     setToast("Profil dan sasaran disimpan.");
   }
 
@@ -200,7 +196,7 @@ export default function RitmaFirebaseApp() {
     <main className="app-shell">
       <nav className="topbar">
         <a className="brand" href="#top">ritma<span>.</span></a>
-        {user ? <div className="account-menu"><button className="avatar-button" onClick={() => document.getElementById("profil")?.scrollIntoView({ behavior: "smooth" })}>{initials(profile.displayName || user.email || "R")}</button><button className="text-button" onClick={() => void signOut(firebaseAuth)}>Keluar</button></div> : <button className="dark-button" onClick={() => setAuthOpen(true)}>Masuk / daftar</button>}
+        {user ? <div className="account-menu"><button className="dark-button" onClick={() => setLeadOpen(true)}>Ebook Diet Percuma</button><button className="avatar-button" onClick={() => document.getElementById("profil")?.scrollIntoView({ behavior: "smooth" })}>{initials(profile.displayName || user.email || "R")}</button><button className="text-button" onClick={() => void signOut(firebaseAuth)}>Keluar</button></div> : <button className="dark-button" onClick={() => setAuthOpen(true)}>Masuk / daftar</button>}
       </nav>
 
       {user && <section className="dashboard" id="top">
@@ -208,10 +204,12 @@ export default function RitmaFirebaseApp() {
 
         <section className="pulse-card"><div className="pulse-heading"><div><p className="kicker">3 SASARAN HARI INI</p><h2>{score >= 90 ? "Ritma anda sangat baik hari ini." : "Teruskan sedikit demi sedikit."}</h2></div><div className="score"><strong>{score}</strong><span>/100</span></div></div><div className="metric-grid">{metrics.map((metric) => <article className="metric" key={metric.category}><div className={"ring " + metric.tone} style={{ "--progress": progress(total(todayEntries, metric.category), metric.valueTarget) + "%" } as CSSProperties}><span>{progress(total(todayEntries, metric.category), metric.valueTarget)}%</span></div><div className="metric-copy"><p>{metric.label}</p><strong>{metric.value}</strong><small> / {metric.target}</small></div><button className="metric-add" onClick={() => { setCategory(metric.category); setEntryOpen(true); }}>+</button></article>)}</div><div className="next-action"><span className="arrow">→</span><div><p>CADANGAN SETERUSNYA</p><strong>{water < profile.waterTargetMl ? "Tambah satu gelas air." : "Teruskan rutin anda hari ini."}</strong><small>Catat sedikit demi sedikit untuk lihat ritma sebenar.</small></div><button className="primary-button" onClick={() => setEntryOpen(true)}>Catat sekarang</button></div></section>
 
-        <div className="lower-grid"><section className="rhythm-card"><div className="section-heading"><div><p className="kicker">REKOD HARI INI</p><h2>Makanan, air dan senaman anda.</h2></div><button className="text-button" onClick={() => setEntryOpen(true)}>+ Tambah</button></div>{todayEntries.length ? <ol className="entry-list">{[...todayEntries].sort((a,b) => a.entryTime.localeCompare(b.entryTime)).map((entry) => <li key={entry.id}><span className={"entry-dot " + entry.category}/><time>{entry.entryTime}</time><div><strong>{entry.label}</strong><small>{entry.amount} {entry.category === "meal" ? "kcal" : entry.category === "water" ? "ml" : "min"}</small></div><button onClick={() => void deleteDoc(doc(firebaseDb, "users", user.uid, "entries", entry.id))}>Padam</button></li>)}</ol> : <div className="empty-state"><strong>Belum ada rekod.</strong><p>Mula dengan satu catatan kecil untuk hari ini.</p></div>}</section><section className="week-card" id="profil"><p className="kicker">PROFIL & SASARAN</p><h2>Tetapan peribadi anda.</h2><form className="profile-form" onSubmit={saveProfile}><label>Nama paparan<input name="displayName" defaultValue={profile.displayName}/></label><label>Sasaran kalori<input name="calorieTarget" type="number" min="1" defaultValue={profile.calorieTarget}/></label><label>Sasaran air (ml)<input name="waterTargetMl" type="number" min="1" defaultValue={profile.waterTargetMl}/></label><label>Sasaran senaman (min)<input name="exerciseTargetMin" type="number" min="1" defaultValue={profile.exerciseTargetMin}/></label><input type="hidden" name="dayMode" value={profile.dayMode}/><label className="check-row"><input name="marketingEmail" type="checkbox" defaultChecked={profile.marketingEmail}/><span>Ya, saya setuju menerima promosi dan ebook melalui e-mel.<small>Anda boleh tarik balik persetujuan ini pada bila-bila masa.</small></span></label><button className="profile-submit">Simpan tetapan</button></form></section></div>
+        <div className="lower-grid"><section className="rhythm-card"><div className="section-heading"><div><p className="kicker">REKOD HARI INI</p><h2>Makanan, air dan senaman anda.</h2></div><button className="text-button" onClick={() => setEntryOpen(true)}>+ Tambah</button></div>{todayEntries.length ? <ol className="entry-list">{[...todayEntries].sort((a,b) => a.entryTime.localeCompare(b.entryTime)).map((entry) => <li key={entry.id}><span className={"entry-dot " + entry.category}/><time>{entry.entryTime}</time><div><strong>{entry.label}</strong><small>{entry.amount} {entry.category === "meal" ? "kcal" : entry.category === "water" ? "ml" : "min"}</small></div><button onClick={() => void deleteDoc(doc(firebaseDb, "users", user.uid, "entries", entry.id))}>Padam</button></li>)}</ol> : <div className="empty-state"><strong>Belum ada rekod.</strong><p>Mula dengan satu catatan kecil untuk hari ini.</p></div>}</section><section className="week-card" id="profil"><p className="kicker">PROFIL & SASARAN</p><h2>Tetapan peribadi anda.</h2><form className="profile-form" onSubmit={saveProfile}><label>Nama paparan<input name="displayName" defaultValue={profile.displayName}/></label><label>Sasaran kalori<input name="calorieTarget" type="number" min="1" defaultValue={profile.calorieTarget}/></label><label>Sasaran air (ml)<input name="waterTargetMl" type="number" min="1" defaultValue={profile.waterTargetMl}/></label><label>Sasaran senaman (min)<input name="exerciseTargetMin" type="number" min="1" defaultValue={profile.exerciseTargetMin}/></label><input type="hidden" name="dayMode" value={profile.dayMode}/><button className="profile-submit">Simpan tetapan</button></form></section></div>
       </section>}
 
-      {authOpen && !user && <div className="dialog-backdrop"><section className="profile-dialog"><button className="close-button" onClick={() => setAuthOpen(false)}>×</button><p className="kicker">RITMA SEBENAR</p><h2>{authMode === "signup" ? "Simpan rekod anda dengan akaun e-mel." : "Selamat kembali."}</h2><p className="dialog-intro">Rekod kalori, air dan senaman hanya boleh diakses oleh akaun anda.</p><form className="profile-form" onSubmit={submitAuth}><label>E-mel<input name="email" type="email" autoComplete="email" required/></label><label>Kata laluan<input name="password" type="password" autoComplete={authMode === "signup" ? "new-password" : "current-password"} minLength={6} required/></label>{authMode === "signup" && <label className="check-row"><input name="marketingEmail" type="checkbox"/><span>Saya setuju menerima promosi dan ebook melalui e-mel.<small>Pilihan ini tidak wajib untuk menggunakan Ritma.</small></span></label>}{authError && <p className="helper">{authError}</p>}<button className="profile-submit" disabled={saving}>{saving ? "Sedang diproses…" : authMode === "signup" ? "Daftar & mula" : "Log masuk"}</button></form><button className="text-button" onClick={() => setAuthMode(authMode === "signup" ? "signin" : "signup")}>{authMode === "signup" ? "Sudah ada akaun? Log masuk" : "Belum ada akaun? Daftar"}</button></section></div>}
+      {authOpen && !user && <div className="dialog-backdrop"><section className="profile-dialog"><button className="close-button" onClick={() => setAuthOpen(false)}>×</button><p className="kicker">RITMA SEBENAR</p><h2>{authMode === "signup" ? "Simpan rekod anda dengan akaun e-mel." : "Selamat kembali."}</h2><p className="dialog-intro">Rekod kalori, air dan senaman hanya boleh diakses oleh akaun anda.</p><form className="profile-form" onSubmit={submitAuth}><label>E-mel<input name="email" type="email" autoComplete="email" required/></label><label>Kata laluan<input name="password" type="password" autoComplete={authMode === "signup" ? "new-password" : "current-password"} minLength={6} required/></label>{authError && <p className="helper">{authError}</p>}<button className="profile-submit" disabled={saving}>{saving ? "Sedang diproses…" : authMode === "signup" ? "Daftar & mula" : "Log masuk"}</button></form><button className="text-button" onClick={() => setAuthMode(authMode === "signup" ? "signin" : "signup")}>{authMode === "signup" ? "Sudah ada akaun? Log masuk" : "Belum ada akaun? Daftar"}</button></section></div>}
+
+      {leadOpen && <LeadDialog onClose={() => setLeadOpen(false)} />}
 
       {entryOpen && user && <div className="dialog-backdrop"><section className="profile-dialog"><button className="close-button" onClick={() => setEntryOpen(false)}>×</button><p className="kicker">CATAT HARI INI</p><h2>Tambah rekod</h2><div className="log-tabs">{(["meal", "water", "exercise"] as Category[]).map((item) => <button key={item} className={category === item ? "active" : ""} onClick={() => setCategory(item)}>{item === "meal" ? "Makanan" : item === "water" ? "Air" : "Senaman"}</button>)}</div><form className="profile-form" onSubmit={addEntry}><label>{category === "meal" ? "Makanan" : category === "water" ? "Jenis minuman" : "Aktiviti"}<input name="label" required placeholder={category === "meal" ? "Contoh: Nasi campur" : category === "water" ? "Contoh: Air kosong" : "Contoh: Berjalan"}/></label><label>{category === "meal" ? "Kalori (kcal)" : category === "water" ? "Jumlah (ml)" : "Tempoh (minit)"}<input name="amount" type="number" min="1" required/></label><button className="profile-submit">Simpan rekod</button></form></section></div>}
       {toast && <div className="toast"><button onClick={() => setToast("")}>{toast}<span>×</span></button></div>}
