@@ -37,6 +37,8 @@ test("demo banner styles target the actual button element", async () => {
   const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
   assert.match(css, /\.demo-banner button/);
   assert.match(css, /\.ring\.over/);
+  assert.match(css, /\.mode-thumb/);
+  assert.match(css, /prefers-reduced-motion/);
 });
 
 test("scopes repeat requests to the signed-in owner", async () => {

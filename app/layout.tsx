@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Fraunces, Instrument_Sans } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
+  display: "swap",
+  axes: ["opsz", "SOFT", "WONK"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const instrument = Instrument_Sans({
+  variable: "--font-instrument",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -21,7 +24,7 @@ export const metadata: Metadata = {
     "Pantau kalori, air dan senaman mengikut rentak hari biasa, puasa atau kerja luar.",
   applicationName: "Ritma",
   manifest: "/manifest.webmanifest",
-  themeColor: "#10261F",
+  themeColor: "#0B1814",
   appleWebApp: { capable: true, title: "Ritma", statusBarStyle: "default" },
   keywords: [
     "kira kalori",
@@ -56,9 +59,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ms">
-      <body className={[geistSans.variable, geistMono.variable].join(" ")}>
+      <body className={[fraunces.variable, instrument.variable].join(" ")}>
         {children}
       </body>
     </html>
   );
-}
+}

@@ -20,6 +20,7 @@ import {
 import { firebaseAuth, firebaseDb } from "./firebase";
 import { LeadDialog } from "./components/LeadDialog";
 import { modeLabel, modes, type DayMode } from "./ritma-data";
+import { useAnimatedNumber, usePointerWash, usePrefersReducedMotion } from "./use-motion";
 
 type Category = "meal" | "water" | "exercise";
 type Profile = {
@@ -172,6 +173,9 @@ export default function RitmaFirebaseApp() {
   const [undoEntry, setUndoEntry] = useState<Entry | null>(null);
   const [leadOpen, setLeadOpen] = useState(false);
   const [quickPreset, setQuickPreset] = useState<{ label: string; amount: number } | null>(null);
+  const [waterRipple, setWaterRipple] = useState<number | null>(null);
+  const reduceMotion = usePrefersReducedMotion();
+  const shellRef = usePointerWash(!reduceMotion);
 
   useEffect(() => onAuthStateChanged(firebaseAuth, (current) => {
     setUser(current);
@@ -247,6 +251,25 @@ export default function RitmaFirebaseApp() {
     if (metric.category === "meal" && raw > 100) return sum + Math.max(0, 200 - raw);
     return sum + Math.min(100, raw);
   }, 0) / 3);
+  const mealFill = ringFill(calories, profile.calorieTarget);
+  const waterFill = ringFill(water, profile.waterTargetMl);
+  const exerciseFill = ringFill(exercise, profile.exerciseTargetMin);
+  const mealRaw = ratioPercent(calories, profile.calorieTarget);
+  const waterRaw = ratioPercent(water, profile.waterTargetMl);
+  const exerciseRaw = ratioPercent(exercise, profile.exerciseTargetMin);
+  const mealRing = useAnimatedNumber(mealFill, 700, !reduceMotion);
+  const waterRing = useAnimatedNumber(waterFill, 700, !reduceMotion);
+  const exerciseRing = useAnimatedNumber(exerciseFill, 700, !reduceMotion);
+  const mealLabel = useAnimatedNumber(calorieOver ? mealRaw : mealFill, 700, !reduceMotion);
+  const waterLabel = useAnimatedNumber(waterFill, 700, !reduceMotion);
+  const exerciseLabel = useAnimatedNumber(exerciseFill, 700, !reduceMotion);
+  const scoreShown = useAnimatedNumber(score, 700, !reduceMotion);
+  const modeIndex = Math.max(0, modes.findIndex((mode) => mode.value === profile.dayMode));
+  const ringMotion = {
+    meal: { fill: mealRing, label: mealLabel },
+    water: { fill: waterRing, label: waterLabel },
+    exercise: { fill: exerciseRing, label: exerciseLabel },
+  } as const;
 
   const recommendation = useMemo(() => {
     const waterProgress = ringFill(water, profile.waterTargetMl);
@@ -406,6 +429,8 @@ export default function RitmaFirebaseApp() {
   }
 
   async function addQuickWater(glasses: number) {
+    setWaterRipple(glasses);
+    window.setTimeout(() => setWaterRipple(null), 220);
     await persistEntry({
       category: "water",
       label: "Air kosong — " + glasses + " gelas",
@@ -478,7 +503,7 @@ export default function RitmaFirebaseApp() {
   }
 
   return (
-    <main className="app-shell">
+    <main className="app-shell" ref={shellRef}>
       <nav className="topbar" aria-label="Navigasi utama">
         <a className="brand" href="#top" aria-label="Ritma — laman utama">ritma<span>.</span></a>
         <div className="nav-actions">
@@ -504,7 +529,7 @@ export default function RitmaFirebaseApp() {
       {!user && (
         <aside className="demo-banner" aria-label="Makluman mod demo">
           <span>MOD DEMO</span>
-          <p>Cuba dashboard tanpa akaun. Log masuk bila anda mahu simpan rekod sebenar.</p>
+          <p>Cuba tanpa akaun.</p>
           <button type="button" onClick={() => setAuthOpen(true)}>Masuk untuk simpan</button>
         </aside>
       )}
@@ -522,6 +547,7 @@ export default function RitmaFirebaseApp() {
                 : "Catat kalori, air dan senaman, sama ada hari biasa, puasa atau kerja luar."}
             </p>
             <div className="mode-switcher" aria-label="Pilih rutin">
+              <span className="mode-thumb" style={{ transform: "translateX(" + modeIndex * 100 + "%)" }} aria-hidden="true" />
               {modes.map((mode) => (
                 <button
                   type="button"
@@ -551,21 +577,19 @@ export default function RitmaFirebaseApp() {
               </h2>
             </div>
             <div className="score" aria-label={"Skor hari ini " + score + " daripada 100"}>
-              <strong>{score}</strong>
+              <strong>{Math.round(scoreShown)}</strong>
               <span>/100</span>
             </div>
           </div>
           <div className="metric-grid">
             {metrics.map((metric) => {
-              const current = total(todayEntries, metric.category);
-              const raw = ratioPercent(current, metric.valueTarget);
-              const fill = ringFill(current, metric.valueTarget);
-              const ringLabel = metric.over ? raw + "%" : fill + "%";
+              const motion = ringMotion[metric.category];
+              const ringLabel = Math.round(motion.label) + "%";
               return (
                 <article className="metric" key={metric.category}>
                   <div
                     className={"ring " + metric.tone + (metric.over ? " over" : "")}
-                    style={{ "--progress": fill + "%" } as CSSProperties}
+                    style={{ "--progress": motion.fill + "%" } as CSSProperties}
                     aria-hidden="true"
                   >
                     <span>{ringLabel}</span>
@@ -578,9 +602,9 @@ export default function RitmaFirebaseApp() {
                       <div className="water-quick">
                         <span>Tambah terus</span>
                         <div>
-                          <button type="button" onClick={() => void addQuickWater(1)}>+1 gelas</button>
-                          <button type="button" onClick={() => void addQuickWater(2)}>+2 gelas</button>
-                          <button type="button" onClick={() => void addQuickWater(3)}>+3 gelas</button>
+                          <button type="button" className={waterRipple === 1 ? "is-rippling" : ""} onClick={() => void addQuickWater(1)}>+1 gelas</button>
+                          <button type="button" className={waterRipple === 2 ? "is-rippling" : ""} onClick={() => void addQuickWater(2)}>+2 gelas</button>
+                          <button type="button" className={waterRipple === 3 ? "is-rippling" : ""} onClick={() => void addQuickWater(3)}>+3 gelas</button>
                         </div>
                       </div>
                     )}
@@ -598,9 +622,9 @@ export default function RitmaFirebaseApp() {
             })}
           </div>
           <div className="next-action">
-            <span className="arrow" aria-hidden="true">→</span>
+            <span className="arrow" aria-hidden="true">—</span>
             <div>
-              <p>CADANGAN SETERUSNYA</p>
+              <p>Cadangan seterusnya</p>
               <strong>{recommendation.title}</strong>
               <small>{recommendation.reason}</small>
             </div>
@@ -655,7 +679,7 @@ export default function RitmaFirebaseApp() {
             </div>
             <div className="week-bars" aria-label="Ringkasan skor tujuh hari">
               {week.map((day) => (
-                <div className="week-day" key={day.date}>
+                <div className="week-day" key={day.date} title={day.label + " · " + day.score + "%"}>
                   <div className="bar-track"><span style={{ height: Math.max(6, day.score) + "%" }} /></div>
                   <strong>{day.label}</strong>
                   <small>{day.score}%</small>

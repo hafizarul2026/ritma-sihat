@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="ritma">
   <rect width="32" height="32" rx="8" fill="#FFF4EA"/>
   <circle cx="15" cy="17.5" r="8.25" fill="none" stroke="#1DB8A6" stroke-width="2.6"/>
-  <circle cx="15" cy="17.5" r="2.6" fill="#10261F"/>
+  <circle cx="15" cy="17.5" r="2.6" fill="#0B1814"/>
   <circle cx="23.6" cy="8.4" r="3.2" fill="#FF5A45"/>
 </svg>
