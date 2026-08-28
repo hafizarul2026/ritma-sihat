@@ -22,10 +22,21 @@ test("server-renders the Ritma demo dashboard", async () => {
   const html = await response.text();
   assert.match(html, /Ritma — Kalori, Air &amp; Senaman Harian/i);
   assert.match(html, /MOD DEMO/);
-  assert.match(html, /Kalori kena pantau/);
+  assert.match(html, /Masuk \/ daftar/);
   assert.match(html, /3 SASARAN HARI INI/);
   assert.match(html, /Kongsi di WhatsApp/);
+  assert.match(html, /Kerja luar/);
+  assert.match(html, /Catat sekarang/);
+  assert.match(html, /Semua angka ialah anggaran/);
+  assert.doesNotMatch(html, /KERJA_LUAR/);
+  assert.doesNotMatch(html, /Ebook Diet Percuma/);
   assert.doesNotMatch(html, /Starter Project|Your site is taking shape/i);
+});
+
+test("demo banner styles target the actual button element", async () => {
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(css, /\.demo-banner button/);
+  assert.match(css, /\.ring\.over/);
 });
 
 test("scopes repeat requests to the signed-in owner", async () => {

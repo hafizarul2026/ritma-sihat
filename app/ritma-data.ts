@@ -57,4 +57,8 @@ export const modes: Array<{ value: DayMode; label: string; hint: string }> = [
   { value: "biasa", label: "Biasa", hint: "Untuk rutin harian biasa" },
   { value: "puasa", label: "Puasa", hint: "Untuk waktu sahur dan berbuka" },
   { value: "kerja_luar", label: "Kerja luar", hint: "Untuk hari yang banyak bergerak di luar" },
-];
+];
+
+export function modeLabel(mode: DayMode): string {
+  return modes.find((item) => item.value === mode)?.label ?? "Biasa";
+}

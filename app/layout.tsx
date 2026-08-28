@@ -18,7 +18,8 @@ export const metadata: Metadata = {
     template: "%s · Ritma",
   },
   description:
-    "Pantau kalori, air dan senaman mengikut rentak hari biasa, puasa atau kerja luar.",  applicationName: "Ritma",
+    "Pantau kalori, air dan senaman mengikut rentak hari biasa, puasa atau kerja luar.",
+  applicationName: "Ritma",
   manifest: "/manifest.webmanifest",
   themeColor: "#18232a",
   appleWebApp: { capable: true, title: "Ritma", statusBarStyle: "default" },
@@ -44,6 +45,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
+    apple: "/favicon.svg",
   },
 };
 
