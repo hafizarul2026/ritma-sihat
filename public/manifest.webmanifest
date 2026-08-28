@@ -4,8 +4,8 @@
   "description": "Pantau kalori, air dan senaman setiap hari.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f3f0e9",
-  "theme_color": "#18232a",
+  "background_color": "#FFF4EA",
+  "theme_color": "#10261F",
   "icons": [
     {
       "src": "/favicon.svg",

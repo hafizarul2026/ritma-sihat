@@ -21,7 +21,7 @@ export const metadata: Metadata = {
     "Pantau kalori, air dan senaman mengikut rentak hari biasa, puasa atau kerja luar.",
   applicationName: "Ritma",
   manifest: "/manifest.webmanifest",
-  themeColor: "#18232a",
+  themeColor: "#10261F",
   appleWebApp: { capable: true, title: "Ritma", statusBarStyle: "default" },
   keywords: [
     "kira kalori",

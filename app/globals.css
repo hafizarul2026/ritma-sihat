@@ -1,16 +1,20 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #18232a;
-  --muted: #5f6e73;
-  --paper: #f3f0e9;
-  --surface: #fffdf8;
-  --soft: #eae6dc;
-  --line: #d5d2c9;
-  --coral: #ff725e;
-  --aqua: #36b8ab;
-  --lime: #a9c94e;
-  --shadow: 0 24px 70px rgba(31, 44, 44, 0.1);
+  --ink: #10261F;
+  --muted: #4E635C;
+  --paper: #FFF4EA;
+  --surface: #FFFAF5;
+  --soft: #F6E2D2;
+  --line: #E8CDB8;
+  --coral: #FF5A45;
+  --aqua: #1DB8A6;
+  --lime: #8FCB3A;
+  --on-coral: #10261F;
+  --aqua-ink: #0F6E63;
+  --aqua-soft: #E4F7F3;
+  --track: #F0DDD0;
+  --shadow: 0 22px 56px rgba(16, 38, 31, 0.16);
 }
 
 * { box-sizing: border-box; }
@@ -19,8 +23,9 @@ body {
   margin: 0;
   overflow-x: hidden;
   background:
-    radial-gradient(circle at 92% 3%, rgba(54, 184, 171, 0.16), transparent 25rem),
-    radial-gradient(circle at 4% 36%, rgba(255, 114, 94, 0.1), transparent 22rem),
+    radial-gradient(circle at 92% -2%, rgba(29, 184, 166, 0.24), transparent 24rem),
+    radial-gradient(circle at 6% 40%, rgba(255, 90, 69, 0.28), transparent 26rem),
+    radial-gradient(circle at 48% 8%, rgba(255, 176, 120, 0.18), transparent 28rem),
     var(--paper);
   color: var(--ink);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
@@ -28,7 +33,7 @@ body {
 button, a, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button:focus-visible, a:focus-visible, input:focus-visible {
-  outline: 3px solid rgba(24, 35, 42, 0.5);
+  outline: 3px solid rgba(16, 38, 31, 0.5);
   outline-offset: 3px;
 }
 button:disabled { cursor: wait; opacity: 0.58; }
@@ -40,7 +45,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(24, 35, 42, 0.13);
+  border-bottom: 1px solid rgba(16, 38, 31, 0.14);
 }
 .brand {
   color: var(--ink);
@@ -70,7 +75,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   border: 0;
   border-radius: 50%;
   background: var(--aqua);
-  color: #102825;
+  color: var(--ink);
   font-weight: 900;
   cursor: pointer;
 }
@@ -84,9 +89,9 @@ button:disabled { cursor: wait; opacity: 0.58; }
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 0.8rem;
-  border: 1px solid rgba(24, 35, 42, 0.13);
+  border: 1px solid var(--line);
   border-radius: 16px;
-  background: rgba(255, 253, 248, 0.78);
+  background: color-mix(in srgb, var(--surface) 88%, white);
 }
 .demo-banner span {
   padding: 0.34rem 0.5rem;
@@ -126,7 +131,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   font-weight: 900;
   letter-spacing: 0.15em;
 }
-.eyebrow { color: #257c73; }
+.eyebrow { color: var(--aqua-ink); }
 .hero-copy h1 {
   max-width: 760px;
   margin: 0;
@@ -147,7 +152,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   grid-template-columns: repeat(3, 1fr);
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: rgba(255, 253, 248, 0.72);
+  background: color-mix(in srgb, var(--surface) 82%, white);
 }
 .mode-switcher button {
   min-height: 44px;
@@ -163,8 +168,8 @@ button:disabled { cursor: wait; opacity: 0.58; }
 }
 .mode-switcher button.active { background: var(--ink); color: white; }
 .pulse-card, .rhythm-card, .week-card {
-  background: rgba(255, 253, 248, 0.93);
-  border: 1px solid rgba(24, 35, 42, 0.1);
+  background: var(--surface);
+  border: 1px solid var(--line);
   box-shadow: var(--shadow);
 }
 .pulse-card { border-radius: 28px; overflow: hidden; }
@@ -174,6 +179,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   gap: 2rem;
   align-items: flex-start;
   padding: clamp(1.5rem, 4vw, 2.6rem);
+  background: linear-gradient(128deg, rgba(255, 90, 69, 0.09), rgba(29, 184, 166, 0.07) 52%, transparent 78%);
 }
 .pulse-heading h2, .rhythm-card h2, .week-card h2, .dialog-header h2 {
   margin: 0;
@@ -210,10 +216,10 @@ button:disabled { cursor: wait; opacity: 0.58; }
 .water-quick button {
   min-height: 44px;
   padding: 0.35rem 0.65rem;
-  border: 1px solid rgba(54, 184, 171, 0.5);
+  border: 1px solid color-mix(in srgb, var(--aqua) 55%, white);
   border-radius: 999px;
-  background: #edfaf8;
-  color: #216f68;
+  background: var(--aqua-soft);
+  color: var(--aqua-ink);
   cursor: pointer;
   font-size: 0.66rem;
   font-weight: 850;
@@ -226,7 +232,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   display: grid;
   place-items: center;
   border-radius: 50%;
-  background: conic-gradient(var(--ring-color) var(--progress), #e4e1d8 0);
+  background: conic-gradient(var(--ring-color) var(--progress), var(--track) 0);
   position: relative;
 }
 .ring::before { content: ""; position: absolute; inset: 7px; border-radius: inherit; background: var(--surface); }
@@ -234,8 +240,8 @@ button:disabled { cursor: wait; opacity: 0.58; }
 .ring.aqua { --ring-color: var(--aqua); }
 .ring.lime { --ring-color: var(--lime); }
 .ring.over {
-  --ring-color: #18232a;
-  box-shadow: 0 0 0 3px rgba(255, 114, 94, 0.45);
+  --ring-color: var(--ink);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--coral) 45%, transparent);
 }
 .ring.over span { color: var(--coral); }
 .metric-add {
@@ -263,14 +269,14 @@ button:disabled { cursor: wait; opacity: 0.58; }
   place-items: center;
   border-radius: 14px;
   background: var(--coral);
-  color: #251411;
+  color: var(--on-coral);
   font-size: 1.35rem;
   font-weight: 900;
 }
 .next-action p { margin-bottom: 0.24rem; }
 .next-action strong { display: block; font-size: 0.96rem; }
 .next-action small { display: block; margin-top: 0.2rem; color: var(--muted); font-size: 0.76rem; line-height: 1.4; }
-.primary-button { padding: 0.85rem 1.25rem; background: var(--coral); color: #291b17; }
+.primary-button { padding: 0.85rem 1.25rem; background: var(--coral); color: var(--on-coral); }
 .lower-grid {
   margin-top: 1.25rem;
   display: grid;
@@ -284,7 +290,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   padding: 0.55rem 0.75rem;
   border: 0;
   background: transparent;
-  color: #216f68;
+  color: var(--aqua-ink);
   cursor: pointer;
   font-size: 0.82rem;
   font-weight: 850;
@@ -328,7 +334,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   gap: 0.5rem;
 }
 .week-day { min-width: 0; display: grid; justify-items: center; gap: 0.28rem; }
-.bar-track { width: min(22px, 100%); height: 118px; display: flex; align-items: flex-end; overflow: hidden; border-radius: 999px; background: #e7e3da; }
+.bar-track { width: min(22px, 100%); height: 118px; display: flex; align-items: flex-end; overflow: hidden; border-radius: 999px; background: var(--track); }
 .bar-track span { width: 100%; min-height: 6%; border-radius: inherit; background: var(--aqua); }
 .week-day strong, .week-day small { font-size: 0.64rem; }
 .week-day strong { text-transform: capitalize; }
@@ -366,7 +372,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   display: grid;
   place-items: center;
   overflow-y: auto;
-  background: rgba(15, 25, 28, 0.58);
+  background: rgba(16, 38, 31, 0.58);
   backdrop-filter: blur(8px);
 }
 .log-sheet, .profile-dialog {
@@ -419,7 +425,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   padding: 0.8rem;
   border: 1px solid var(--line);
   border-radius: 14px;
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
   text-align: left;
@@ -436,7 +442,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
 .meal-builder { padding: 1rem; border-radius: 18px; background: var(--paper); }
 .builder-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
 .builder-heading small { color: var(--muted); font-size: 0.72rem; }
-.builder-heading > strong { color: #1f746c; font-size: 1rem; white-space: nowrap; }
+.builder-heading > strong { color: var(--aqua-ink); font-size: 1rem; white-space: nowrap; }
 .part-chips { margin-top: 0.8rem; display: flex; flex-wrap: wrap; gap: 0.45rem; }
 .part-chips button {
   min-height: 40px;
@@ -455,7 +461,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   border: 0;
   border-radius: 13px;
   background: var(--coral);
-  color: #291b17;
+  color: var(--on-coral);
   cursor: pointer;
   font-weight: 900;
 }
@@ -465,7 +471,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   min-height: 94px;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   cursor: pointer;
 }
@@ -496,7 +502,7 @@ button:disabled { cursor: wait; opacity: 0.58; }
   padding: 0.7rem 0.8rem;
   border: 1px solid var(--line);
   border-radius: 11px;
-  background: white;
+  background: var(--surface);
   color: var(--ink);
 }
 .manual-form > button { min-width: 130px; padding-inline: 1rem; }
